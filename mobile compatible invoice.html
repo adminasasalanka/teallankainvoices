@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Teal Lanka Bio Tech - Invoice Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 10px;
+        }
+
+        /* --- Input Form Styling --- */
+        .form-container {
+            max-width: 750px;
+            margin: 10px auto 30px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-top: 8px solid #008751;
+            box-sizing: border-box;
+        }
+        .form-container h2 {
+            margin-top: 0;
+            color: #333;
+            text-align: center;
+            font-size: 22px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        
+        ::placeholder {
+            color: #b3b3b3 !important;
+            opacity: 1; 
+        }
+
+        .items-heading {
+            margin-top: 25px;
+            border-bottom: 2px solid #008751;
+            padding-bottom: 5px;
+            color: #008751;
+            font-size: 18px;
+        }
+
+        /* Responsive Item Row Configuration */
+        .item-row {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 4px solid #008751;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .item-number {
+            font-weight: bold;
+            color: #333;
+            min-width: 20px;
+        }
+        .item-row input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .item-row input.desc { flex: 2; min-width: 150px; }
+        .item-row input.qty { flex: 0.5; min-width: 70px; }
+        .item-row input.price { flex: 0.5; min-width: 90px; }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn-add { background-color: #008751; color: white; margin-top: 5px; width: 100%; }
+        .btn-remove { background-color: #d9534f; color: white; padding: 10px 15px; }
+        .btn-generate { background-color: #1a73e8; color: white; width: 100%; margin-top: 25px; font-size: 16px; padding: 14px; }
+        
+        /* Action Buttons Grid */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+            padding: 0 10px;
+        }
+        .action-buttons button { margin: 0; padding: 12px; font-size: 14px; }
+        .btn-print { background-color: #333; color: white; }
+        .btn-download { background-color: #e09200; color: white; }
+        .btn-image { background-color: #9c27b0; color: white; }
+
+        /* --- Invoice Layout Styling --- */
+        #invoice-wrapper {
+            display: none; 
+            max-width: 800px;
+            margin: 0 auto;
+            overflow-x: auto; /* Adds horizontal scrolling on phones if preview is too wide */
+            padding: 5px;
+        }
+        #invoice-preview {
+            background: #fff;
+            padding: 30px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            border: 1px solid #ccc;
+            min-width: 650px; /* Ensures PDF/Image formatting doesn't squeeze on tiny mobile screens */
+            box-sizing: border-box;
+        }
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .company-logo {
+            width: 75px;
+            height: 75px;
+            object-fit: contain;
+            vertical-align: middle;
+            margin-right: 15px;
+        }
+        .company-name {
+            font-size: 38px;
+            font-weight: bold;
+            color: #111;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .company-address {
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+        
+        .meta-info-table {
+            width: 100%;
+            margin-top: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            border-collapse: collapse;
+            line-height: 1.4;
+        }
+        .meta-info-table td {
+            padding: 0;
+            vertical-align: top;
+        }
+        
+        .bill-bar {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .bill-bar td {
+            border: 2px solid #000;
+            padding: 8px 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .main-invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .main-invoice-table th {
+            border: 2px solid #000;
+            padding: 6px 8px;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .grid-cell {
+            border-left: 2px solid #000;
+            border-right: 2px solid #000;
+            padding: 10px 8px;
+            font-size: 13px;
+            vertical-align: top;
+            height: 480px; 
+        }
+        
+        .item-list-row {
+            padding: 4px 0;
+            min-height: 22px;
+            box-sizing: border-box;
+        }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0px; 
+        }
+        .summary-table td {
+            border: 2px solid #000;
+            padding: 6px 8px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* --- Media Queries for Screen Adjustments --- */
+        @media screen and (max-width: 600px) {
+            .item-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .item-row input.desc, .item-row input.qty, .item-row input.price {
+                width: 100%;
+                flex: none;
+                max-width: 100%;
+            }
+            .btn-remove {
+                width: 100%;
+                text-align: center;
+            }
+            body {
+                padding: 5px;
+            }
+            .form-container {
+                padding: 15px;
+            }
+        }
+
+        @media print {
+            .form-container, .action-buttons { display: none !important; }
+            #invoice-wrapper { display: block !important; overflow-x: visible !important; }
+            #invoice-preview { border: none; padding: 0; box-shadow: none; min-width: auto; }
+            body { background: #fff; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container" id="inputForm">
+        <h2>Teal Lanka Bio Tech <br><span style="font-size: 14px; color: #666; font-weight: normal;">Invoice Generator Form</span></h2>
+        <hr style="border: 1px solid #008751; margin-bottom: 20px;">
+        
+        <div class="form-group">
+            <label for="formBillTo">Bill To :</label>
+            <input type="text" id="formBillTo" placeholder="Customer name">
+        </div>
+        
+        <div class="form-group">
+            <label for="formDate">Date :</label>
+            <input type="text" id="formDate" placeholder="e.g., 06/06/2026">
+        </div>
+
+        <h3 class="items-heading">Items</h3>
+        <div id="items-container">
+            <div class="item-row">
+                <span class="item-number">1</span>
+                <input type="text" placeholder="Item Description" class="desc">
+                <input type="number" placeholder="Qty" class="qty">
+                <input type="number" placeholder="Price" class="price">
+                <button type="button" class="btn-remove" onclick="removeItemRow(this)">X</button>
+            </div>
+        </div>
+        
+        <button type="button" class="btn-add" onclick="addItemRow()">+ Add Item Row</button>
+
+        <div class="form-group" style="margin-top: 25px;">
+            <label for="formDiscount">Discount Amount (Rs.) :</label>
+            <input type="number" id="formDiscount" placeholder="0">
+        </div>
+
+        <button type="button" class="btn-generate" onclick="generateInvoice()">Generate & View Invoice</button>
+    </div>
+
+    <div class="action-buttons" id="actionArea" style="display:none;">
+        <button class="btn-print" onclick="window.print()">Print Invoice</button>
+        
+    </div>
+
+    <div id="invoice-wrapper">
+        <div id="invoice-preview">
+            <div class="invoice-header">
+                <div>
+                    <img src="data:image/jpeg;base64,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"style="height: 50px; width: auto; vertical-align: middle; margin-right: 8px;">
+                    <div class="company-name">Teal Lanka Bio Tech</div>
+                </div>
+                <div class="company-address">NO 250 BANDARANAYAKAPURA,KIRINDIWELA</div>
+                
+                <table class="meta-info-table">
+                    <tr>
+                        <td style="width: 45%; text-align: left;">
+                            SEED ACT REG NO : SA/CMB/13602<br>
+                            B.R.NO : WN-7619
+                        </td>
+                        <td style="width: 55%; text-align: right;">
+                            E-mail : teallankabiotech1@gmail.com<br>
+                            Tel : 0759056696 / 0762119389
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <table class="bill-bar">
+                <tr>
+                    <td style="width: 65%; border-right: none;">Bill To : <span id="invBillTo"></span></td>
+                    <td style="width: 35%; border-left: 2px solid #000;">Date : <span id="invDate"></span></td>
+                </tr>
+            </table>
+
+            <table class="main-invoice-table">
+                <thead>
+                    <tr>
+                        <th style="width: 6%;">NO</th>
+                        <th style="width: 59%;">Description</th>
+                        <th style="width: 11%;">Quantity</th>
+                        <th style="width: 11%;">Unit price</th>
+                        <th style="width: 13%;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="grid-cell text-center" id="col-no"></td>
+                        <td class="grid-cell" id="col-desc"></td>
+                        <td class="grid-cell text-center" id="col-qty"></td>
+                        <td class="grid-cell text-right" id="col-price"></td>
+                        <td class="grid-cell text-right" id="col-total"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table class="summary-table">
+                <tr>
+                    <td style="width: 87%; text-align: left;">Sub Total</td>
+                    <td style="width: 13%; text-align: right;" id="invSubTotal">0</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left;">Discount</td>
+                    <td style="text-align: right;" id="invDiscount">0</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left;">Total</td>
+                    <td style="text-align: right;" id="invTotal">0</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const today = new Date();
+        const formattedDate = String(today.getDate()).padStart(2, '0') + '/' + String(today.getMonth() + 1).padStart(2, '0') + '/' + today.getFullYear();
+        document.getElementById('formDate').value = formattedDate;
+
+        function updateFormRowNumbers() {
+            const rows = document.querySelectorAll('#items-container .item-row');
+            rows.forEach((row, index) => {
+                row.querySelector('.item-number').innerText = index + 1;
+            });
+        }
+
+        function addItemRow() {
+            const container = document.getElementById('items-container');
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <span class="item-number"></span>
+                <input type="text" placeholder="Item Description" class="desc">
+                <input type="number" placeholder="Qty" class="qty">
+                <input type="number" placeholder="Price" class="price">
+                <button type="button" class="btn-remove" onclick="removeItemRow(this)">X</button>
+            `;
+            container.appendChild(row);
+            updateFormRowNumbers();
+        }
+
+        function removeItemRow(button) {
+            button.parentElement.remove();
+            updateFormRowNumbers();
+        }
+
+        function generateInvoice() {
+            const billToValue = document.getElementById('formBillTo').value;
+            const dateValue = document.getElementById('formDate').value;
+            const discountValue = parseFloat(document.getElementById('formDiscount').value) || 0;
+
+            document.getElementById('invBillTo').innerText = billToValue.trim() !== "" ? billToValue : "";
+            document.getElementById('invDate').innerText = dateValue;
+
+            document.getElementById('col-no').innerHTML = '';
+            document.getElementById('col-desc').innerHTML = '';
+            document.getElementById('col-qty').innerHTML = '';
+            document.getElementById('col-price').innerHTML = '';
+            document.getElementById('col-total').innerHTML = '';
+
+            const formRows = document.querySelectorAll('#items-container .item-row');
+            let subTotal = 0;
+            let activeItemsCount = 0;
+
+            formRows.forEach((row) => {
+                const desc = row.querySelector('.desc').value;
+                const qty = parseFloat(row.querySelector('.qty').value) || 0;
+                const price = parseFloat(row.querySelector('.price').value) || 0;
+
+                if (desc.trim() !== "") {
+                    activeItemsCount++;
+                    const rowTotal = qty * price;
+                    subTotal += rowTotal;
+
+                    document.getElementById('col-no').innerHTML += `<div class="item-list-row">${activeItemsCount}</div>`;
+                    document.getElementById('col-desc').innerHTML += `<div class="item-list-row">${desc}</div>`;
+                    document.getElementById('col-qty').innerHTML += `<div class="item-list-row">${qty}</div>`;
+                    document.getElementById('col-price').innerHTML += `<div class="item-list-row">${price.toFixed(2)}</div>`;
+                    document.getElementById('col-total').innerHTML += `<div class="item-list-row">${rowTotal.toFixed(2)}</div>`;
+                }
+            });
+
+            const grandTotal = subTotal - discountValue;
+
+            document.getElementById('invSubTotal').innerText = subTotal.toFixed(2);
+            document.getElementById('invDiscount').innerText = discountValue > 0 ? discountValue.toFixed(2) : '0.00';
+            document.getElementById('invTotal').innerText = grandTotal.toFixed(2);
+
+            document.getElementById('invoice-wrapper').style.display = 'block';
+            document.getElementById('actionArea').style.display = 'grid'; // Changed to grid for mobile layouts
+
+            document.getElementById('invoice-wrapper').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function downloadInvoicePDF() {
+            const element = document.getElementById('invoice-preview');
+            const rawBillTo = document.getElementById('formBillTo').value.trim();
+            const billToName = rawBillTo !== "" ? rawBillTo.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
+            const cleanDate = document.getElementById('formDate').value.replace(/\//g, '-');
+            
+            const opt = {
+                margin:       10,
+                filename:     `Invoice_${billToName}_${cleanDate}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function downloadInvoiceImage() {
+            const element = document.getElementById('invoice-preview');
+            const rawBillTo = document.getElementById('formBillTo').value.trim();
+            const billToName = rawBillTo !== "" ? rawBillTo.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
+            const cleanDate = document.getElementById('formDate').value.replace(/\//g, '-');
+
+            html2canvas(element, {
+                scale: 3, 
+                useCORS: true,
+                backgroundColor: "#ffffff"
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Invoice_${billToName}_${cleanDate}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
