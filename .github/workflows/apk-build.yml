@@ -22,29 +22,34 @@ jobs:
     - name: Create Cordova Project
       run: |
         cordova create invoiceapp com.invoice.teallanka TealLankaInvoice
-        
         cd invoiceapp
         cordova platform add android
         
-        # icon එකක් තියෙනවා නම් res folder එකට copy කරනවා
+        # Storage එකට ෆයිල් සේව් කරන්න අවශ්‍ය Plugins එකතු කිරීම
+        cordova plugin add cordova-plugin-file
+        cordova plugin add cordova-plugin-android-permissions
+        
         if [ -f "../icon.png" ]; then
           mkdir -p res
           cp ../icon.png res/icon.png
         fi
         
-        # config.xml එක සකස් කිරීම - මෙතන content src එකට ඔයාගේ URL එක දාලා තියෙන්නේ
         cat <<EOF > config.xml
         <?xml version='1.0' encoding='utf-8'?>
         <widget id="com.invoice.teallanka" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
             <name>TealLanka Invoice</name>
             <description>Teal Lanka Invoice Generator App</description>
             <author email="dev@callback.com" href="http://cordova.io">Teal Lanka Team</author>
-            
             <content src="https://adminasasalanka.github.io/teallankainvoices/index.html" />
-            
             <access origin="*" />
             <allow-navigation href="https://adminasasalanka.github.io/*" />
             <allow-navigation href="*" />
+            
+            <!-- Android Storage Permissions -->
+            <config-file target="AndroidManifest.xml" parent="/*">
+                <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+                <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+            </config-file>
             
             <icon src="res/icon.png" />
         </widget>
